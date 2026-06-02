@@ -1,0 +1,23 @@
+# B站下载器 - 隐私文件过滤
+
+# Cookie文件（包含登录凭证）
+cookies.txt
+
+# 配置文件（包含个人路径）
+config.yml
+config.local.yml
+
+# 日志文件
+*.log
+
+# 下载的视频目录（大文件不提交）
+downloads/
+Downloaded/
+
+# IDE配置
+.vscode/
+.idea/
+
+# OS文件
+.DS_Store
+Thumbs.db
