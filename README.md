@@ -11,7 +11,7 @@
 ### 1. 安装依赖
 
 ```bash
-pip install yt-dlp playwright
+pip install yt-dlp playwright pyyaml
 playwright install chromium
 ```
 
@@ -41,8 +41,8 @@ end_time: "2024-12-31"         # 可选：只下载该日期之前的视频
 
 ### 4. 开始下载
 
-```powershell
-.\scripts\download_bilibili.ps1
+```bash
+python scripts/download_bilibili.py
 ```
 
 脚本会遍历配置中的每个链接，调用 yt-dlp 下载，已下载的视频（记录在 `archive.txt`）会自动跳过。
@@ -53,7 +53,7 @@ end_time: "2024-12-31"         # 可选：只下载该日期之前的视频
 
 | 文件 | 用途 |
 |------|------|
-| `scripts/download_bilibili.ps1` | 主脚本：读取配置、调用 yt-dlp 下载 |
+| `scripts/download_bilibili.py` | 主脚本：读取配置、调用 yt-dlp 下载 |
 | `scripts/refresh_cookies.py` | 用 Playwright 打开浏览器，扫码获取 Cookie |
 | `config.yml` | 下载配置（链接、路径、时间过滤） |
 | `cookies.txt` | 登录凭证（Netscape 格式，已加入 .gitignore） |
