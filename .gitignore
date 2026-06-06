@@ -7,6 +7,9 @@ cookies.txt
 config.yml
 config.local.yml
 
+# 增量下载记录（包含个人下载历史）
+archive.txt
+
 # 日志文件
 *.log
 
