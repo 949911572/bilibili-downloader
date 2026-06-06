@@ -9,6 +9,12 @@ import traceback
 from datetime import datetime, timezone
 from pathlib import Path
 
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+except AttributeError:
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
 from playwright.async_api import async_playwright
 
 SCRIPT_DIR = Path(__file__).parent.resolve()

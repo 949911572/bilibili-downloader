@@ -1,5 +1,5 @@
 # ============================================
-# yt-dlp
+# yt-dlp - Bilibili Batch Downloader
 # ============================================
 
 $ErrorActionPreference = "Stop"
@@ -10,7 +10,7 @@ $CookiesFile = "$ProjectDir\cookies.txt"
 $ArchiveFile = "$ProjectDir\archive.txt"
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  哔哩哔哩批量下载器 (yt-dlp)" -ForegroundColor Cyan
+Write-Host "  Bilibili Batch Downloader (yt-dlp)" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 
 $env:PATH = "C:\myEnvironment\ffmpeg\ffmpeg-8.1.1-essentials_build\bin;$env:PATH"
@@ -23,18 +23,30 @@ if (-not $ytdlp) {
 }
 
 if (-not (Test-Path $CookiesFile)) {
-    Write-Host "[WARN] Cookie文件不存在: $CookiesFile" -ForegroundColor Yellow
-    Write-Host "[WARN] 将尝试无Cookie下载" -ForegroundColor Yellow
+    Write-Host "[WARN] Cookie file not found: $CookiesFile" -ForegroundColor Yellow
+    Write-Host "[WARN] Will try to download without cookies" -ForegroundColor Yellow
 }
 
 if (-not (Test-Path $ConfigFile)) {
-    Write-Host "[ERROR] 配置文件不存在: $ConfigFile" -ForegroundColor Red
+    Write-Host "[ERROR] Config file not found: $ConfigFile" -ForegroundColor Red
     pause
     exit 1
 }
 
+# Read config
 $config = Get-Content $ConfigFile -Raw
 
+# Parse download path
+$DownloadPath = "C:\Users\sb\Desktop\0-C\Bilibili\Downloaded"
+$pathLine = $config -split "`n" | Where-Object { $_ -match '^\s*path:\s*(.+)$' }
+if ($pathLine) {
+    $pathValue = ($pathLine -split 'path:\s*', 2)[1].Trim()
+    if ($pathValue) {
+        $DownloadPath = $pathValue
+    }
+}
+
+# Parse links
 $links = @()
 $config -split "`n" | ForEach-Object {
     $line = $_.Trim()
@@ -44,36 +56,24 @@ $config -split "`n" | ForEach-Object {
 }
 
 if ($links.Count -eq 0) {
-    Write-Host "[WARN] config.yml 中没有链接" -ForegroundColor Yellow
+    Write-Host "[WARN] No links in config.yml" -ForegroundColor Yellow
     pause
     exit 0
 }
 
-$startTime = ""
-$endTime = ""
-if ($config -match 'start_time:\s*"([^"]*)"') { $startTime = $Matches[1] }
-if ($config -match 'end_time:\s*"([^"]*)"') { $endTime = $Matches[1] }
-
-$downloadPath = "C:\Users\sb\Desktop\0需处理-C盘\B站下载\Downloaded"
-if ($config -match 'path:\s*(.+?)\s*$') {
-    $rawPath = $Matches[1].Trim()
-    if ($rawPath -and $rawPath -ne '""') { $downloadPath = $rawPath }
-}
-
-Write-Host "链接数: $($links.Count)" -ForegroundColor DarkGray
-Write-Host "下载目录: $downloadPath" -ForegroundColor DarkGray
-if ($startTime) { Write-Host "时间过滤: >= $startTime" -ForegroundColor DarkGray }
-if ($endTime) { Write-Host "时间过滤: <= $endTime" -ForegroundColor DarkGray }
+Write-Host "Links count: $($links.Count)" -ForegroundColor DarkGray
+Write-Host "Download directory: $DownloadPath" -ForegroundColor DarkGray
 Write-Host ""
 
 $totalFailed = 0
 
 foreach ($link in $links) {
     Write-Host "---" -ForegroundColor DarkGray
-    Write-Host "处理: $link" -ForegroundColor White
+    Write-Host "Processing: $link" -ForegroundColor White
 
+    $outputTemplate = $DownloadPath + '/%(uploader)s/%(title)s.%(ext)s'
     $ytArgs = @(
-        "-o", "$downloadPath/%(uploader)s/%(title)s.%(ext)s",
+        "-o", $outputTemplate,
         "-f", "bestvideo+bestaudio",
         "--merge-output-format", "mp4",
         "--download-archive", $ArchiveFile
@@ -86,15 +86,6 @@ foreach ($link in $links) {
     if (Test-Path $CookiesFile) {
         $ytArgs += "--cookies"
         $ytArgs += $CookiesFile
-    }
-
-    if ($startTime) {
-        $ytArgs += "--dateafter"
-        $ytArgs += $startTime
-    }
-    if ($endTime) {
-        $ytArgs += "--datebefore"
-        $ytArgs += $endTime
     }
 
     $ytArgs += $link
@@ -112,13 +103,13 @@ foreach ($link in $links) {
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  下载完成" -ForegroundColor Cyan
+Write-Host "  Download Complete" -ForegroundColor Cyan
 if ($totalFailed -gt 0) {
-    Write-Host "  失败: $totalFailed 个链接" -ForegroundColor Red
+    Write-Host "  Failed: $totalFailed links" -ForegroundColor Red
 }
-Write-Host "  增量记录: $ArchiveFile" -ForegroundColor DarkGray
+Write-Host "  Archive: $ArchiveFile" -ForegroundColor DarkGray
 Write-Host "========================================" -ForegroundColor Cyan
 
-if (Test-Path $downloadPath) {
-    explorer $downloadPath
+if (Test-Path $DownloadPath) {
+    explorer $DownloadPath
 }

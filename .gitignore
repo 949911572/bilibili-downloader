@@ -13,6 +13,9 @@ archive.txt
 # 日志文件
 *.log
 
+# 文档草稿（本地学习用，不提交）
+doc/
+
 # 下载的视频目录（大文件不提交）
 downloads/
 Downloaded/
