@@ -29,6 +29,38 @@ def check_ytdlp():
         sys.exit(1)
 
 
+def check_and_create_directory(download_path):
+    """检查并创建下载目录，确保可写"""
+    path = Path(download_path)
+
+    # 如果是相对路径，转换为绝对路径（相对于项目根目录）
+    if not path.is_absolute():
+        path = PROJECT_DIR / path
+
+    # 创建目录（如果不存在）
+    if not path.exists():
+        print(f"[INFO] Creating download directory: {path}")
+        try:
+            path.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            print(f"[ERROR] Cannot create directory: {path}")
+            print(f"[ERROR] {e}")
+            sys.exit(1)
+
+    # 检查写入权限
+    try:
+        test_file = path / f".write_test_{__import__('random').random()}"
+        test_file.write_text("test")
+        test_file.unlink()
+    except Exception as e:
+        print(f"[ERROR] Cannot write to directory: {path}")
+        print(f"[ERROR] {e}")
+        sys.exit(1)
+
+    # 返回绝对路径
+    return str(path)
+
+
 def load_config():
     if not CONFIG_FILE.exists():
         print(f"[ERROR] Config file not found: {CONFIG_FILE}")
@@ -68,6 +100,9 @@ def main():
     check_ytdlp()
 
     links, download_path = load_config()
+
+    # 检查下载目录，返回绝对路径
+    download_path = check_and_create_directory(download_path)
 
     if not COOKIES_FILE.exists():
         print(f"[WARN] Cookie file not found: {COOKIES_FILE}")

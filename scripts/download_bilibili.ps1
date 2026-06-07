@@ -37,13 +37,43 @@ if (-not (Test-Path $ConfigFile)) {
 $config = Get-Content $ConfigFile -Raw
 
 # Parse download path
-$DownloadPath = "C:\Users\sb\Desktop\0-C\Bilibili\Downloaded"
+$DownloadPath = "./Downloaded"
 $pathLine = $config -split "`n" | Where-Object { $_ -match '^\s*path:\s*(.+)$' }
 if ($pathLine) {
     $pathValue = ($pathLine -split 'path:\s*', 2)[1].Trim()
     if ($pathValue) {
         $DownloadPath = $pathValue
     }
+}
+
+# Convert relative path to absolute path (relative to project root)
+if (-not [System.IO.Path]::IsPathRooted($DownloadPath)) {
+    $DownloadPath = Join-Path $ProjectDir $DownloadPath
+}
+
+# Check and create download directory
+if (-not (Test-Path $DownloadPath)) {
+    Write-Host "[INFO] Creating download directory: $DownloadPath" -ForegroundColor Yellow
+    try {
+        New-Item -ItemType Directory -Path $DownloadPath -Force | Out-Null
+    } catch {
+        Write-Host "[ERROR] Cannot create directory: $DownloadPath" -ForegroundColor Red
+        Write-Host "[ERROR] $_" -ForegroundColor Red
+        pause
+        exit 1
+    }
+}
+
+# Check write permission
+try {
+    $testFile = Join-Path $DownloadPath ".write_test_$(Get-Random)"
+    [System.IO.File]::WriteAllText($testFile, "test")
+    Remove-Item $testFile -Force
+} catch {
+    Write-Host "[ERROR] Cannot write to directory: $DownloadPath" -ForegroundColor Red
+    Write-Host "[ERROR] $_" -ForegroundColor Red
+    pause
+    exit 1
 }
 
 # Parse links

@@ -6,8 +6,8 @@ link:
   - https://space.bilibili.com/12345678
   - https://space.bilibili.com/87654321
 
-# 下载目录
-path: C:\Downloads\Bilibili
+# 下载目录（相对路径，项目根目录下）
+path: ./Downloaded
 
 # 时间过滤：只下载该日期之后的视频（YYYY-MM-DD），留空不限制
 start_time: ""
