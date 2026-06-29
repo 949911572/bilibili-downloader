@@ -27,6 +27,12 @@ Downloaded/
 .vscode/
 .idea/
 
+# Python虚拟环境
+venv/
+.env/
+*.pyc
+__pycache__/
+
 # OS文件
 .DS_Store
 Thumbs.db

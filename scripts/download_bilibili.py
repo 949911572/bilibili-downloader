@@ -6,15 +6,16 @@ import subprocess
 import sys
 import shutil
 from pathlib import Path
+from datetime import datetime
 
 import yaml
 
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 CONFIG_FILE = PROJECT_DIR / "config.yml"
-COOKIES_FILE = PROJECT_DIR / "cookies.txt"
-ARCHIVE_FILE = PROJECT_DIR / "archive.txt"
-DEFAULT_PATH = r"C:\Users\sb\Desktop\0-C\Bilibili\Downloaded"
+# 默认值（相对路径，会在运行时转为绝对路径）
+DEFAULT_COOKIES = PROJECT_DIR / "cookies.txt"
+DEFAULT_ARCHIVE = PROJECT_DIR / "archive.txt"
 
 
 def print_header():
@@ -70,26 +71,95 @@ def load_config():
         config = yaml.safe_load(f)
 
     links = config.get("link", []) if config else []
-    download_path = config.get("path", DEFAULT_PATH) if config else DEFAULT_PATH
+    download_path = config.get("path") if config else None
 
-    return links, download_path
+    if not download_path:
+        print("[ERROR] 'path' not configured in config.yml")
+        sys.exit(1)
+
+    # 从配置读取 cookies 和 archive 路径，转换为绝对路径
+    cookies_path = config.get("cookies_file", "cookies.txt") if config else "cookies.txt"
+    archive_path = config.get("archive_file", "archive.txt") if config else "archive.txt"
+
+    if not Path(cookies_path).is_absolute():
+        cookies_path = PROJECT_DIR / cookies_path
+    if not Path(archive_path).is_absolute():
+        archive_path = PROJECT_DIR / archive_path
+
+    return links, download_path, cookies_path, archive_path
 
 
-def build_args(link, download_path):
+def check_cookie_validity(cookies_file):
+    """检查 cookie 是否过期，重点检查 SESSDATA 等认证 Cookie"""
+    if not cookies_file.exists():
+        return None, "[WARN] Cookie file not found"
+
+    try:
+        with open(cookies_file, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        now = datetime.now()
+        auth_cookies = {}
+
+        for line in content.split("\n"):
+            if line.strip() and not line.startswith("#"):
+                parts = line.split("\t")
+                if len(parts) >= 6:
+                    name = parts[5].strip()
+                    try:
+                        expiry_timestamp = int(parts[4])
+                        if expiry_timestamp > 0:
+                            expires = datetime.fromtimestamp(expiry_timestamp)
+                            auth_cookies[name] = expires
+                    except ValueError:
+                        continue
+
+        if not auth_cookies:
+            return None, "[WARN] Cannot parse cookie expiry time"
+
+        critical_cookies = ["SESSDATA", "bili_jct", "DedeUserID"]
+        expired_cookies = []
+        expiring_soon = []
+
+        for name, expires in auth_cookies.items():
+            if name in critical_cookies:
+                if now > expires:
+                    expired_cookies.append(f"{name} ({expires.strftime('%Y-%m-%d')})")
+                elif (expires - now).days < 1:
+                    expiring_soon.append(name)
+
+        if expired_cookies:
+            return False, f"[ERROR] Auth cookies expired: {', '.join(expired_cookies)}"
+
+        if expiring_soon:
+            return True, f"[WARN] Cookies expire soon: {', '.join(expiring_soon)}"
+
+        sessdata_expiry = auth_cookies.get("SESSDATA")
+        if sessdata_expiry:
+            days_left = (sessdata_expiry - now).days
+            return True, f"[INFO] Cookie valid until {sessdata_expiry.strftime('%Y-%m-%d %H:%M:%S')} ({days_left} days left)"
+        else:
+            return None, "[WARN] SESSDATA not found in cookies"
+
+    except Exception as e:
+        return None, f"[WARN] Error checking cookie: {e}"
+
+
+def build_args(link, download_path, cookies_file, archive_file):
     output_template = f"{download_path}/%(uploader)s/%(title)s.%(ext)s"
     args = [
         "yt-dlp",
         "-o", output_template,
         "-f", "bestvideo+bestaudio",
         "--merge-output-format", "mp4",
-        "--download-archive", str(ARCHIVE_FILE),
+        "--download-archive", str(archive_file),
     ]
 
     if "space.bilibili.com" not in link:
         args.append("--no-playlist")
 
-    if COOKIES_FILE.exists():
-        args.extend(["--cookies", str(COOKIES_FILE)])
+    if cookies_file.exists():
+        args.extend(["--cookies", str(cookies_file)])
 
     args.append(link)
     return args
@@ -99,14 +169,20 @@ def main():
     print_header()
     check_ytdlp()
 
-    links, download_path = load_config()
+    links, download_path, cookies_path, archive_path = load_config()
 
     # 检查下载目录，返回绝对路径
     download_path = check_and_create_directory(download_path)
 
-    if not COOKIES_FILE.exists():
-        print(f"[WARN] Cookie file not found: {COOKIES_FILE}")
+    if not cookies_path.exists():
+        print(f"[WARN] Cookie file not found: {cookies_path}")
         print("[WARN] Will try to download without cookies")
+    else:
+        is_valid, msg = check_cookie_validity(cookies_path)
+        print(msg)
+        if is_valid is False:
+            print("[ERROR] Please refresh cookies: python scripts/refresh_cookies.py")
+            sys.exit(1)
 
     if not links:
         print("[WARN] No links in config.yml")
@@ -122,7 +198,7 @@ def main():
         print("-" * 40)
         print(f"[{i}/{len(links)}] {link}")
 
-        args = build_args(link, download_path)
+        args = build_args(link, download_path, cookies_path, archive_path)
         result = subprocess.run(args)
 
         if result.returncode == 0:
@@ -138,7 +214,7 @@ def main():
         print(f"  Failed: {len(failed)} links")
         for link, code in failed:
             print(f"    [{code}] {link}")
-    print(f"  Archive: {ARCHIVE_FILE}")
+    print(f"  Archive: {archive_path}")
     print("=" * 40)
 
 

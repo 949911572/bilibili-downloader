@@ -9,7 +9,7 @@
 ### 1. 安装依赖
 
 ```bash
-pip install yt-dlp playwright
+pip install -r requirements.txt
 playwright install chromium
 ```
 
@@ -44,17 +44,18 @@ python scripts/download_bilibili.py
 | 文件 | 用途 |
 |------|------|
 | `scripts/download_bilibili.py` | 主脚本（Python） |
-| `scripts/download_bilibili.ps1` | 主脚本（PowerShell） |
 | `scripts/refresh_cookies.py` | 获取 Cookie |
 | `config.yml` | 下载配置 |
 | `cookies.txt` | 登录凭证 |
 | `archive.txt` | 增量记录 |
+| `Downloaded/` | 下载目录 |
+| `link-backup/` | 已完成链接备份目录 |
 
 ---
 
 ## 注意事项
 
-- Cookie 会过期，下载失败时运行 `refresh_cookies.py` 刷新
+- Cookie 会过期，脚本会自动检测过期状态，过期时提示刷新命令
 - 本质就是 `yt-dlp` 命令的批量封装
 - 请遵守B站用户协议
 
