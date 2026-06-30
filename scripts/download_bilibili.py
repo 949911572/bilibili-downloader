@@ -245,17 +245,18 @@ def main() -> None:
             validate_url(link)
 
             args = build_args(link, download_path, cookies_path, archive_path)
-            result = subprocess.run(args, capture_output=True, text=True, encoding="utf-8", errors="replace")
+            process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
 
-            if result.returncode == 0:
+            print()
+            for line in process.stdout:
+                print(f"  {line.rstrip()}")
+            process.wait()
+
+            if process.returncode == 0:
                 print("  [OK]")
             else:
-                print(f"  [FAIL] exit code: {result.returncode}")
-                if result.stderr:
-                    print(f"  stderr:\n{result.stderr.strip()}")
-                if result.stdout:
-                    print(f"  stdout:\n{result.stdout.strip()}")
-                failed.append((link, result.returncode))
+                print(f"  [FAIL] exit code: {process.returncode}")
+                failed.append((link, process.returncode))
 
         print()
         print("=" * 40)

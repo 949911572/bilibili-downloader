@@ -8,6 +8,8 @@
 
 ### 1. 安装依赖
 
+**要求**: Python 3.9+
+
 ```bash
 pip install -r requirements.txt
 playwright install chromium
