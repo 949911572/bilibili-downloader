@@ -6,6 +6,7 @@ import random
 import subprocess
 import sys
 import shutil
+import re
 from pathlib import Path
 from datetime import datetime
 from urllib.parse import urlparse
@@ -198,6 +199,7 @@ def build_args(link: str, download_path: Path, cookies_file: Path, archive_file:
         "--restrict-filenames",
         "--replace-in-metadata", "uploader", r"[\\/:*?\"<>|]", "_",
         "--replace-in-metadata", "title", r"[\\/:*?\"<>|]", "_",
+        "--newline",
     ]
 
     if "space.bilibili.com" not in link:
@@ -247,10 +249,22 @@ def main() -> None:
             args = build_args(link, download_path, cookies_path, archive_path)
             process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
 
+            progress_pattern = re.compile(r'\[download\].*?(\d+\.\d+)%')
+            is_tty = sys.stdout.isatty()
+
             print()
             for line in process.stdout:
-                print(f"  {line.rstrip()}")
+                line = line.rstrip()
+                match = progress_pattern.search(line)
+                if match and is_tty:
+                    sys.stdout.write(f"\r  {line}\033[K")
+                    sys.stdout.flush()
+                elif line:
+                    print(f"  {line}")
             process.wait()
+
+            if is_tty:
+                print()
 
             if process.returncode == 0:
                 print("  [OK]")
