@@ -48,6 +48,11 @@ cookies_file: cookies.txt
 archive_file: archive.txt
 ```
 
+**支持的链接类型：**
+- UP主空间: `https://space.bilibili.com/12345678`
+- 单视频: `https://www.bilibili.com/video/BV1xxx`
+- 多P视频指定分P: `https://www.bilibili.com/video/BV1xxx?p=2`
+
 ### 4. 运行
 
 ```bash
@@ -69,6 +74,61 @@ python scripts/download_bilibili.py
 | `archive.txt` | 增量下载记录 |
 | `Downloaded/` | 下载目录（按 UP 主分类） |
 | `requirements.txt` | Python 依赖 |
+
+---
+
+## 常见问题
+
+### Cookie 过期怎么办？
+脚本启动时会自动检测 Cookie 过期状态。如果提示过期，运行：
+```bash
+python scripts/refresh_cookies.py
+```
+重新扫码登录即可。
+
+### 下载的视频画质不高？
+- 检查 Cookie 是否有效（会员视频需要大会员账号）
+- 确保登录的是有权限的账号
+- 运行 `python scripts/refresh_cookies.py` 刷新 Cookie
+
+### 某些视频下载失败？
+可能原因：
+- 视频已删除或设置为私密
+- 网络连接问题或 B 站限流
+- 链接格式不正确
+
+解决方法：
+- 手动在浏览器中打开链接，确认视频可用
+- 稍后重试
+- 检查网络连接
+
+### Playwright / Chromium 安装失败？
+- 确保网络畅通
+- 手动安装：`playwright install chromium`
+- 或手动从浏览器导出 Cookie 保存为 Netscape 格式
+
+### 视频下载后无法播放？
+- 可能是下载未完成（文件损坏），删除后重新下载
+- 尝试使用 VLC 等兼容性更好的播放器
+- 检查 yt-dlp 输出是否有错误提示
+
+### 安全错误（退出码 3）？
+- 检查 `config.yml` 中的 `path` 是否使用了相对路径（如 `./Downloaded`）
+- 确保下载路径在项目目录范围内
+- 检查链接是否为有效的 B 站链接（仅允许 bilibili.com 和 b23.tv）
+
+### archive.txt 丢失了怎么办？
+删除损坏的 archive.txt 后重新运行脚本，文件会自动重建。
+注意：重建后已下载的视频会被重新检测，但不会重复下载（yt-dlp 会根据文件名判断）。
+
+---
+
+## 已知限制
+
+- **Cookie 有效期**：B 站 Cookie 会定期过期，需要人工扫码重新获取（无法自动刷新）
+- **会员视频画质**：下载画质取决于登录账号的会员等级，平台限制无法绕过
+- **下载速度**：受网络带宽和 B 站服务器限速影响，大量视频下载可能较慢
+- **视频可用性**：已删除、私密或仅限特定用户观看的视频无法下载
 
 ---
 
