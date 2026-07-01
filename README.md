@@ -1,6 +1,6 @@
-# B站视频批量下载器
+﻿# B站视频批量下载器
 
-> 基于 yt-dlp 的视频下载脚本，支持批量下载、增量下载、Cookie自动刷新等功能。
+> 基于 yt-dlp 的视频下载脚本，支持批量下载、增量下载、Cookie 过期检测等功能。
 
 ---
 
@@ -9,6 +9,11 @@
 ### 1. 安装依赖
 
 **要求**: Python 3.9+
+
+还需要安装 [ffmpeg](https://ffmpeg.org/)（用于合并音视频）：
+- Windows: 从 [ffmpeg 官网](https://ffmpeg.org/download.html) 下载并添加到 PATH，或使用 `winget install Gyan.FFmpeg`
+- macOS: `brew install ffmpeg`
+- Linux: `sudo apt install ffmpeg`
 
 ```bash
 pip install -r requirements.txt
@@ -20,17 +25,27 @@ playwright install chromium
 ```bash
 python scripts/refresh_cookies.py
 ```
-扫码登录B站后自动保存到 `cookies.txt`。
+
+扫码登录 B 站后自动保存到 `cookies.txt`。
 
 ### 3. 配置
 
-复制 `config.example.yml` 为 `config.yml`，修改以下配置：
+复制 `config.example.yml` 为 `config.yml`：
 
 ```yaml
+# 视频链接或UP主空间链接，每行一个
 link:
   - https://www.bilibili.com/video/BV1xxx
+  - https://space.bilibili.com/12345678
 
-path: ./Downloaded    # 下载目录（相对路径）
+# 下载目录（相对路径）
+path: ./Downloaded
+
+# Cookie 文件路径（默认 cookies.txt，可不用改）
+cookies_file: cookies.txt
+
+# 增量记录文件（默认 archive.txt，可不用改）
+archive_file: archive.txt
 ```
 
 ### 4. 运行
@@ -45,14 +60,15 @@ python scripts/download_bilibili.py
 
 | 文件 | 用途 |
 |------|------|
-| `scripts/download_bilibili.py` | 主脚本（Python） |
+| `scripts/download_bilibili.py` | 主脚本（批量下载） |
 | `scripts/refresh_cookies.py` | 获取 Cookie |
-| `scripts/utils.py` | 公共工具模块（路径、常量） |
+| `scripts/utils.py` | 公共工具模块 |
 | `config.yml` | 下载配置 |
+| `config.example.yml` | 配置示例模板 |
 | `cookies.txt` | 登录凭证 |
-| `archive.txt` | 增量记录 |
-| `Downloaded/` | 下载目录 |
-| `link-backup/` | 已完成链接备份目录 |
+| `archive.txt` | 增量下载记录 |
+| `Downloaded/` | 下载目录（按 UP 主分类） |
+| `requirements.txt` | Python 依赖 |
 
 ---
 
@@ -61,16 +77,16 @@ python scripts/download_bilibili.py
 本项目经过严格的代码审查，包含以下安全和质量保障：
 
 ### 安全特性
-- **命令注入防护**：路径验证、URL白名单、参数安全校验
+- **命令注入防护**：路径验证、URL 白名单、参数安全校验
 - **路径遍历防护**：下载路径限制在项目目录范围内
-- **Cookie安全**：认证Cookie过期检测、文件权限保护
-- **文件名安全**：特殊字符过滤、路径遍历字符替换
+- **Cookie 安全**：认证 Cookie 过期检测、关键 Cookie 校验
+- **文件名安全**：特殊字符过滤、非法字符替换
 
 ### 代码质量
 - **统一异常处理**：自定义异常体系，不同错误类型对应不同退出码
 - **模块化设计**：公共逻辑提取到 `utils.py`
 - **类型提示**：完整的 Python 类型注解
-- **错误输出**：下载失败时输出详细的 stderr/stdout 信息
+- **实时进度输出**：下载进度实时单行刷新显示
 
 ---
 
@@ -78,7 +94,7 @@ python scripts/download_bilibili.py
 
 - Cookie 会过期，脚本会自动检测过期状态，过期时提示刷新命令
 - 本质就是 `yt-dlp` 命令的批量封装
-- 请遵守B站用户协议
+- 请遵守 B 站用户协议
 
 ---
 
@@ -91,13 +107,13 @@ python scripts/download_bilibili.py
 | 0 | 成功 | 执行完成，无错误 | 正常下载完成 |
 | 1 | 通用错误 | 未预期的异常 | 程序内部错误 |
 | 2 | 配置错误 | 配置文件相关问题 | 配置文件缺失、配置项错误 |
-| 3 | 安全错误 | 安全校验失败 | 路径遍历攻击、恶意URL、域名不在白名单 |
-| 4 | 运行时错误 | 运行过程中的错误 | 依赖缺失（yt-dlp）、目录创建失败、写入权限不足、Cookie过期 |
+| 3 | 安全错误 | 安全校验失败 | 路径遍历攻击、恶意 URL、域名不在白名单 |
+| 4 | 运行时错误 | 运行过程中的错误 | 依赖缺失（yt-dlp/ffmpeg）、目录创建失败、写入权限不足、Cookie 过期 |
 
 **排查建议**：
 - 退出码 2：检查 `config.yml` 文件是否存在且格式正确
 - 退出码 3：检查配置的下载路径和链接是否合法
-- 退出码 4：检查 yt-dlp 是否安装、下载目录权限是否足够、Cookie 是否过期
+- 退出码 4：检查 yt-dlp/ffmpeg 是否安装、下载目录权限是否足够、Cookie 是否过期
 
 ---
 
