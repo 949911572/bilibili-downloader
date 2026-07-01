@@ -189,7 +189,7 @@ def check_cookie_validity(cookies_file: Path) -> Tuple[Optional[bool], str]:
 
 
 def build_args(link: str, download_path: Path, cookies_file: Path, archive_file: Path) -> List[str]:
-    output_template = f"{download_path}/%(uploader)s/%(title)s.%(ext)s"
+    output_template = f"{download_path}/%(uploader|clean)s/%(title|clean)s.%(ext)s"
     args: List[str] = [
         "yt-dlp",
         "-o", output_template,
@@ -197,8 +197,8 @@ def build_args(link: str, download_path: Path, cookies_file: Path, archive_file:
         "--merge-output-format", "mp4",
         "--download-archive", str(archive_file),
         "--restrict-filenames",
-        "--replace-in-metadata", "uploader", r"[\\/:*?\"<>|]", "_",
-        "--replace-in-metadata", "title", r"[\\/:*?\"<>|]", "_",
+
+
         "--newline",
     ]
 
