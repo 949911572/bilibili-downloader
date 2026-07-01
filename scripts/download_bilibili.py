@@ -1,4 +1,4 @@
-"""
+﻿"""
 yt-dlp - Bilibili Batch Downloader (Python)
 读取 config.yml 中的链接，批量调用 yt-dlp 下载 B 站视频。
 """
@@ -60,7 +60,7 @@ def validate_and_normalize_path(download_path: str) -> Path:
     return resolved_path
 
 
-def validate_url(link: str) -> bool:
+def validate_url(link: str) -> None:
     try:
         parsed = urlparse(link)
         if parsed.scheme not in ("http", "https"):
@@ -70,7 +70,6 @@ def validate_url(link: str) -> bool:
         allowed_domains = ["bilibili.com", "b23.tv"]
         if not any(domain in parsed.netloc for domain in allowed_domains):
             raise SecurityError(f"URL not from allowed domains: {parsed.netloc}. Only {allowed_domains} are allowed")
-        return True
     except Exception as e:
         raise SecurityError(f"Invalid URL: {link}. {e}")
 
@@ -197,8 +196,6 @@ def build_args(link: str, download_path: Path, cookies_file: Path, archive_file:
         "--merge-output-format", "mp4",
         "--download-archive", str(archive_file),
         "--restrict-filenames",
-
-
         "--newline",
     ]
 
